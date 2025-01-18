@@ -1,12 +1,16 @@
 #!/bin/bash
 
-POLLING_INTERVAL=120
+POLL_INTERVAL=${POLL_INTERVAL}
 
-cd /apps/nationalrail
+if [ "${POLL_INTERVAL}" == "" ];
+then
+  echo "ERROR: POLL_INTERVAL not set. Exiting."
+  exit -1
+fi
 
 while true;
 do
   python3 railtimes.py
-  echo "Sleeping for ${POLLING_INTERVAL}s..."
-  sleep ${POLLING_INTERVAL}
+  echo "Sleeping for ${POLL_INTERVAL}s..."
+  sleep ${POLL_INTERVAL}
 done

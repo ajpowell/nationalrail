@@ -10,6 +10,7 @@ import os
 import logging
 import json
 import datetime
+import sys
 
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
@@ -34,7 +35,17 @@ def main():
     logging.debug('Using API Token: {}'.format(os.environ.get("LDB_TOKEN")))
     logging.info('')
 
-    crs = 'NCL'
+    crs = os.environ.get("CRS")
+    if crs is None:
+        crs = 'NCL'  # Use as a default
+
+    logging.info(f'Processing for station {crs}...')
+    logging.info('')
+
+    if os.environ.get("LDB_TOKEN") is NotImplemented:
+        logging.error('LDB_TOKEN is not set. Exiting.')
+        sys.exit()
+
     output_file_dirs = datetime.datetime.now().strftime('raw/%Y/%m/%d')
     output_file_name = datetime.datetime.now().strftime('%H%M%S')
 
@@ -99,22 +110,26 @@ def main():
 
     connect_str = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
 
-    # Create the BlobServiceClient object
-    blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+    if connect_str:
+        # Create the BlobServiceClient object
+        blob_service_client = BlobServiceClient.from_connection_string(connect_str)
 
-    container_name = 'nationalrail'
+        container_name = 'nationalrail'
 
-    # Connect to existing container
-    container_client = blob_service_client.get_container_client(container_name)
+        # Connect to existing container
+        container_client = blob_service_client.get_container_client(container_name)
 
-    # Create a blob client using the local file name as the name for the blob
-    blob_client = blob_service_client.get_blob_client(container=container_name, blob=output_file_path)
+        # Create a blob client using the local file name as the name for the blob
+        blob_client = blob_service_client.get_blob_client(container=container_name, blob=output_file_path)
 
-    blob_client.upload_blob(json.dumps(return_row_list))
+        blob_client.upload_blob(json.dumps(return_row_list))
 
-    logging.info(f'Stored data in : {output_file_path}')
-    # print(json.dumps(return_row_list))
+        logging.info(f'Stored data in : {output_file_path}')
+        # print(json.dumps(return_row_list))
 
+    else:
+        logging.error('AZURE_STORAGE_CONNECTION_STRING is not set. Exiting.')
+        sys.exit()
 
 if __name__ == "__main__":
     configure_logging()
